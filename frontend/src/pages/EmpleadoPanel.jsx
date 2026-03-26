@@ -8,6 +8,11 @@ const nextStatus = {
   EN_LAVADO: "FINALIZADO",
 };
 
+function getAutoOwnerName(auto) {
+  const full = `${auto?.cliente_nombre || ""} ${auto?.cliente_apellido || ""}`.trim();
+  return full || `Usuario #${auto?.usuario_id ?? "-"}`;
+}
+
 export default function EmpleadoPanel() {
   const [autos, setAutos] = useState([]);
   const [error, setError] = useState("");
@@ -72,7 +77,7 @@ export default function EmpleadoPanel() {
           >
             <div>
               <p className="font-bold text-cw-darkBlue">
-                {auto.cliente} - {auto.patente}
+                {getAutoOwnerName(auto)} - {auto.patente}
               </p>
               <p className="text-sm text-slate-500">Telefono: {auto.telefono}</p>
             </div>

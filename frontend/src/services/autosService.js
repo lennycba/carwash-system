@@ -1,7 +1,20 @@
 import api from "./api";
 
 export const autosService = {
+  async registrarVehiculo(payload) {
+    const response = await api.post("/autos/vehiculos", payload);
+    return response.data;
+  },
+  async listarVehiculos() {
+    const response = await api.get("/autos/vehiculos");
+    return response.data;
+  },
+  async crearIngreso(vehiculoId) {
+    const response = await api.post("/autos/ingresos", { vehiculo_id: vehiculoId });
+    return response.data;
+  },
   async crearAuto(payload) {
+    // Compatibilidad: crea vehiculo si no existe y genera ingreso.
     const response = await api.post("/autos", payload);
     return response.data;
   },

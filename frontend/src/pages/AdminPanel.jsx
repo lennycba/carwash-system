@@ -32,6 +32,10 @@ function buildFallbackStats(autos, empleadoId, desde, hasta) {
 }
 
 export default function AdminPanel() {
+  const [activeTab, setActiveTab] = useState(() => {
+    const saved = localStorage.getItem("carwash_admin_active_tab");
+    return saved || "estadisticas";
+  });
   const [users, setUsers] = useState([]);
   const [autos, setAutos] = useState([]);
   const [stats, setStats] = useState({ total_autos_procesados: 0 });
@@ -51,6 +55,11 @@ export default function AdminPanel() {
     () => users.filter((user) => user.rol === "EMPLEADO"),
     [users]
   );
+
+  const getAutoOwnerName = (auto) => {
+    const full = `${auto?.cliente_nombre || ""} ${auto?.cliente_apellido || ""}`.trim();
+    return full || `Usuario #${auto?.usuario_id ?? "-"}`;
+  };
 
   const loadBaseData = async () => {
     setError("");
@@ -85,6 +94,10 @@ export default function AdminPanel() {
   useEffect(() => {
     loadBaseData();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("carwash_admin_active_tab", activeTab);
+  }, [activeTab]);
 
   useEffect(() => {
     loadStats();
@@ -149,107 +162,152 @@ export default function AdminPanel() {
       </div>
 
       <div className="panel-card">
-        <h3 className="font-bold text-lg text-cw-darkBlue">Estadisticas de procesamiento</h3>
-        <p className="text-sm text-slate-500 mt-1">
-          Filtra por fecha y empleado para medir productividad.
-        </p>
-        <form className="grid md:grid-cols-4 gap-3 mt-4" onSubmit={applyStatsFilters}>
-          <input
-            className="input-base"
-            type="date"
-            value={filters.desde}
-            onChange={(event) => setFilters((prev) => ({ ...prev, desde: event.target.value }))}
-          />
-          <input
-            className="input-base"
-            type="date"
-            value={filters.hasta}
-            onChange={(event) => setFilters((prev) => ({ ...prev, hasta: event.target.value }))}
-          />
-          <select
-            className="input-base"
-            value={filters.empleadoId}
-            onChange={(event) => setFilters((prev) => ({ ...prev, empleadoId: event.target.value }))}
+        <div className="flex flex-wrap gap-2">
+          <button
+            className={`px-4 py-2 rounded-xl border text-sm font-semibold transition ${
+              activeTab === "estadisticas"
+                ? "bg-cw-skyBlue text-white border-cw-skyBlue"
+                : "bg-white/80 dark:bg-slate-900/70 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200"
+            }`}
+            onClick={() => setActiveTab("estadisticas")}
+            type="button"
           >
-            <option value="">Todos los empleados</option>
-            {empleados.map((empleado) => (
-              <option key={empleado.id} value={empleado.id}>
-                {getFullName(empleado)}
-              </option>
-            ))}
-          </select>
-          <button className="primary-btn" type="submit">
-            Aplicar filtros
+            Estadisticas
           </button>
-        </form>
-      </div>
-
-      <div className="panel-card">
-        <h3 className="font-bold text-lg text-cw-darkBlue">Asignar empleados a auto</h3>
-        <p className="text-sm text-slate-500 mt-1">
-          Selecciona un auto y asigna uno o varios empleados para su trabajo.
-        </p>
-        <form className="grid md:grid-cols-3 gap-3 mt-4" onSubmit={handleAssign}>
-          <select
-            className="input-base"
-            value={assignment.autoId}
-            onChange={(event) => setAssignment((prev) => ({ ...prev, autoId: event.target.value }))}
-            required
+          <button
+            className={`px-4 py-2 rounded-xl border text-sm font-semibold transition ${
+              activeTab === "usuarios"
+                ? "bg-cw-skyBlue text-white border-cw-skyBlue"
+                : "bg-white/80 dark:bg-slate-900/70 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200"
+            }`}
+            onClick={() => setActiveTab("usuarios")}
+            type="button"
           >
-            <option value="">Seleccionar auto</option>
-            {autos.map((auto) => (
-              <option key={auto.id} value={auto.id}>
-                #{auto.id} - {auto.patente} ({auto.cliente})
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="input-base min-h-28"
-            multiple
-            value={assignment.empleadosIds.map(String)}
-            onChange={handleEmployeeSelection}
-            required
-          >
-            {empleados.map((empleado) => (
-              <option key={empleado.id} value={empleado.id}>
-                {getFullName(empleado)}
-              </option>
-            ))}
-          </select>
-
-          <button className="primary-btn" type="submit">
-            Asignar empleados
+            Gestion de usuarios
           </button>
-        </form>
-      </div>
-
-      <div className="panel-card">
-        <h3 className="font-bold text-lg text-cw-darkBlue">Gestion de usuarios</h3>
-        <p className="text-sm text-slate-500 mt-1">Actualiza roles desde este panel administrativo.</p>
-      </div>
-
-      <SimpleTable
-        headers={["Nombre", "Email", "Rol", "Accion"]}
-        rows={users.map((user) => [
-          <span className="font-semibold text-cw-darkBlue" key={`${user.id}-nombre`}>
-            {getFullName(user)}
-          </span>,
-          user.email,
-          user.rol,
-          <select
-            key={user.id}
-            className="input-base"
-            value={user.rol}
-            onChange={(event) => cambiarRol(user.id, event.target.value)}
+          <button
+            className={`px-4 py-2 rounded-xl border text-sm font-semibold transition ${
+              activeTab === "asignacion"
+                ? "bg-cw-skyBlue text-white border-cw-skyBlue"
+                : "bg-white/80 dark:bg-slate-900/70 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200"
+            }`}
+            onClick={() => setActiveTab("asignacion")}
+            type="button"
           >
-            <option value="ADMIN">ADMIN</option>
-            <option value="EMPLEADO">EMPLEADO</option>
-            <option value="CLIENTE">CLIENTE</option>
-          </select>,
-        ])}
-        emptyMessage="No hay usuarios cargados."
-      />
+            Asignacion de autos
+          </button>
+        </div>
+      </div>
+
+      {activeTab === "estadisticas" && (
+        <div className="panel-card">
+          <h3 className="font-bold text-lg text-cw-darkBlue">Estadisticas de procesamiento</h3>
+          <p className="text-sm text-slate-500 mt-1">
+            Filtra por fecha y empleado para medir productividad.
+          </p>
+          <form className="grid md:grid-cols-4 gap-3 mt-4" onSubmit={applyStatsFilters}>
+            <input
+              className="input-base"
+              type="date"
+              value={filters.desde}
+              onChange={(event) => setFilters((prev) => ({ ...prev, desde: event.target.value }))}
+            />
+            <input
+              className="input-base"
+              type="date"
+              value={filters.hasta}
+              onChange={(event) => setFilters((prev) => ({ ...prev, hasta: event.target.value }))}
+            />
+            <select
+              className="input-base"
+              value={filters.empleadoId}
+              onChange={(event) => setFilters((prev) => ({ ...prev, empleadoId: event.target.value }))}
+            >
+              <option value="">Todos los empleados</option>
+              {empleados.map((empleado) => (
+                <option key={empleado.id} value={empleado.id}>
+                  {getFullName(empleado)}
+                </option>
+              ))}
+            </select>
+            <button className="primary-btn" type="submit">
+              Aplicar filtros
+            </button>
+          </form>
+        </div>
+      )}
+
+      {activeTab === "usuarios" && (
+        <>
+          <div className="panel-card">
+            <h3 className="font-bold text-lg text-cw-darkBlue">Gestion de usuarios</h3>
+            <p className="text-sm text-slate-500 mt-1">Actualiza roles desde este panel administrativo.</p>
+          </div>
+          <SimpleTable
+            headers={["Nombre", "Email", "Rol", "Accion"]}
+            rows={users.map((user) => [
+              <span className="font-semibold text-cw-darkBlue" key={`${user.id}-nombre`}>
+                {getFullName(user)}
+              </span>,
+              user.email,
+              user.rol,
+              <select
+                key={user.id}
+                className="input-base"
+                value={user.rol}
+                onChange={(event) => cambiarRol(user.id, event.target.value)}
+              >
+                <option value="ADMIN">ADMIN</option>
+                <option value="EMPLEADO">EMPLEADO</option>
+                <option value="CLIENTE">CLIENTE</option>
+              </select>,
+            ])}
+            emptyMessage="No hay usuarios cargados."
+          />
+        </>
+      )}
+
+      {activeTab === "asignacion" && (
+        <div className="panel-card">
+          <h3 className="font-bold text-lg text-cw-darkBlue">Asignar empleados a auto</h3>
+          <p className="text-sm text-slate-500 mt-1">
+            Selecciona un auto y asigna uno o varios empleados para su trabajo.
+          </p>
+          <form className="grid md:grid-cols-3 gap-3 mt-4" onSubmit={handleAssign}>
+            <select
+              className="input-base"
+              value={assignment.autoId}
+              onChange={(event) => setAssignment((prev) => ({ ...prev, autoId: event.target.value }))}
+              required
+            >
+              <option value="">Seleccionar auto</option>
+              {autos.map((auto) => (
+                <option key={auto.id} value={auto.id}>
+                  #{auto.id} - {auto.patente} ({getAutoOwnerName(auto)})
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="input-base min-h-28"
+              multiple
+              value={assignment.empleadosIds.map(String)}
+              onChange={handleEmployeeSelection}
+              required
+            >
+              {empleados.map((empleado) => (
+                <option key={empleado.id} value={empleado.id}>
+                  {getFullName(empleado)}
+                </option>
+              ))}
+            </select>
+
+            <button className="primary-btn" type="submit">
+              Asignar empleados
+            </button>
+          </form>
+        </div>
+      )}
 
       {message && <p className="text-sm text-emerald-700">{message}</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
